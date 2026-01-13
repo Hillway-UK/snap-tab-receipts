@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { RECEIPT_CATEGORIES } from "@/lib/categories";
-import type { Receipt } from "@/hooks/useReceipts";
+import type { Receipt } from "@/lib/types";
 
 interface ReceiptFormProps {
   receipt?: Partial<Receipt>;

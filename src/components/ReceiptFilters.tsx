@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet";
 import { Filter, X } from "lucide-react";
 import { RECEIPT_CATEGORIES } from "@/lib/categories";
-import type { ReceiptFilters as FilterType } from "@/hooks/useReceipts";
+import type { ReceiptFilters as FilterType } from "@/lib/types";
 
 interface ReceiptFiltersProps {
   filters: FilterType;

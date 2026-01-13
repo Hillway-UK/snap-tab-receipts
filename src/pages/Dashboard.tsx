@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/supabase-db";
 import { BottomNav } from "@/components/BottomNav";
 import { CameraCapture } from "@/components/CameraCapture";
 import { ReceiptForm } from "@/components/ReceiptForm";
-import { useReceiptUpload } from "@/hooks/useReceiptUpload";
-import { useToast } from "@/hooks/use-toast";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
 
 const Dashboard = () => {
@@ -16,9 +16,9 @@ const Dashboard = () => {
   const [capturedImage, setCapturedImage] = useState<{ file: File; preview: string } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [uploadedPath, setUploadedPath] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { uploadImage, isUploading } = useReceiptUpload();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -44,12 +44,40 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    setIsUploading(true);
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) throw new Error("Not authenticated");
+
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${currentUser.id}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("receipts")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+      return fileName;
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Upload failed",
+        description: error.message,
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleCapture = async (file: File) => {
-    // Create preview
     const preview = URL.createObjectURL(file);
     setCapturedImage({ file, preview });
 
-    // Upload immediately
     const path = await uploadImage(file);
     if (path) {
       setUploadedPath(path);
@@ -70,10 +98,14 @@ const Dashboard = () => {
     if (!uploadedPath || !user) return;
 
     try {
-      const { error } = await supabase.from("receipts").insert({
+      const { error } = await db.from("receipts").insert({
         user_id: user.id,
         image_path: uploadedPath,
-        ...data,
+        receipt_date: data.receipt_date,
+        amount: data.amount,
+        vendor: data.vendor,
+        category: data.category,
+        notes: data.notes,
         is_reconciled: false,
       });
 
