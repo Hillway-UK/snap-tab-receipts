@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { Receipt } from "lucide-react";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -53,14 +54,23 @@ const Login = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-4">
+      {/* SnapTab Branding */}
+      <div className="mb-8 flex flex-col items-center gap-3">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
+          <Receipt className="h-8 w-8 text-primary-foreground" />
+        </div>
+        <h1 className="text-3xl font-bold text-foreground">SnapTab</h1>
+        <p className="text-muted-foreground">Capture & organize your receipts</p>
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
+          <CardTitle className="text-xl">{isSignUp ? "Create Account" : "Welcome Back"}</CardTitle>
           <CardDescription>
             {isSignUp
-              ? "Enter your details to create your account"
-              : "Enter your credentials to access your account"}
+              ? "Enter your details to get started"
+              : "Sign in to access your receipts"}
           </CardDescription>
         </CardHeader>
         <CardContent>
