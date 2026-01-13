@@ -4,34 +4,28 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { db } from "@/lib/supabase-db";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-
-interface Receipt {
-  id: string;
-  user_id: string;
-  image_path: string;
-  receipt_date: string | null;
-  amount: number | null;
-  vendor: string | null;
-  category: string | null;
-  notes: string | null;
-  is_reconciled: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import type { Receipt } from "@/lib/types";
 
 interface ReceiptCardProps {
   receipt: Receipt;
   showReconcileToggle?: boolean;
+  onReconcileChange?: () => void;
 }
 
-export const ReceiptCard = ({ receipt, showReconcileToggle }: ReceiptCardProps) => {
-  const { getImageUrl } = useReceiptUpload();
-  const toggleReconciled = useToggleReconciled();
+export const ReceiptCard = ({ receipt, showReconcileToggle, onReconcileChange }: ReceiptCardProps) => {
+  const [isUpdating, setIsUpdating] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
+
+  const getImageUrl = (path: string) => {
+    const { data } = supabase.storage.from("receipts").getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const handleClick = () => {
     navigate(`/receipts/${receipt.id}`);
@@ -41,8 +35,26 @@ export const ReceiptCard = ({ receipt, showReconcileToggle }: ReceiptCardProps) 
     e.stopPropagation();
   };
 
-  const handleReconcileChange = (checked: boolean) => {
-    toggleReconciled.mutate({ id: receipt.id, is_reconciled: checked });
+  const handleReconcileChange = async (checked: boolean) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await db
+        .from("receipts")
+        .update({ is_reconciled: checked })
+        .eq("id", receipt.id);
+
+      if (error) throw error;
+      toast({ title: checked ? "Marked as reconciled" : "Marked as unreconciled" });
+      onReconcileChange?.();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error updating receipt",
+        description: error.message,
+      });
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -100,7 +112,7 @@ export const ReceiptCard = ({ receipt, showReconcileToggle }: ReceiptCardProps) 
                 id={`reconcile-${receipt.id}`}
                 checked={receipt.is_reconciled}
                 onCheckedChange={handleReconcileChange}
-                disabled={toggleReconciled.isPending}
+                disabled={isUpdating}
               />
               <label
                 htmlFor={`reconcile-${receipt.id}`}

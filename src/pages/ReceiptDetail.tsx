@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/supabase-db";
 import { BottomNav } from "@/components/BottomNav";
 import { ReceiptForm } from "@/components/ReceiptForm";
 import { ShareButton } from "@/components/ShareButton";
@@ -21,20 +22,7 @@ import {
 import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
-
-interface Receipt {
-  id: string;
-  user_id: string;
-  image_path: string;
-  receipt_date: string | null;
-  amount: number | null;
-  vendor: string | null;
-  category: string | null;
-  notes: string | null;
-  is_reconciled: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import type { Receipt } from "@/lib/types";
 
 const ReceiptDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +40,7 @@ const ReceiptDetail = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(session.user);
-        const { data: roleData } = await supabase
+        const { data: roleData } = await db
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
@@ -72,7 +60,7 @@ const ReceiptDetail = () => {
     if (!user || !id) return;
 
     const fetchReceipt = async () => {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("receipts")
         .select("*")
         .eq("id", id)
@@ -109,9 +97,15 @@ const ReceiptDetail = () => {
     setIsSaving(true);
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("receipts")
-        .update(data)
+        .update({
+          receipt_date: data.receipt_date,
+          amount: data.amount,
+          vendor: data.vendor,
+          category: data.category,
+          notes: data.notes,
+        })
         .eq("id", id);
 
       if (error) throw error;
@@ -138,7 +132,7 @@ const ReceiptDetail = () => {
       await supabase.storage.from("receipts").remove([receipt.image_path]);
 
       // Delete receipt record
-      const { error } = await supabase.from("receipts").delete().eq("id", id);
+      const { error } = await db.from("receipts").delete().eq("id", id);
       if (error) throw error;
 
       toast({ title: "Receipt deleted" });
@@ -156,7 +150,7 @@ const ReceiptDetail = () => {
     if (!id) return;
 
     try {
-      const { error } = await supabase
+      const { error } = await db
         .from("receipts")
         .update({ is_reconciled: checked })
         .eq("id", id);

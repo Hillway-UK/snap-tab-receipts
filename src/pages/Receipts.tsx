@@ -1,33 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/lib/supabase-db";
 import { BottomNav } from "@/components/BottomNav";
 import { ReceiptCard } from "@/components/ReceiptCard";
 import { ReceiptFilters } from "@/components/ReceiptFilters";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet, Plus } from "lucide-react";
+import { FileSpreadsheet, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@supabase/supabase-js";
-
-interface Receipt {
-  id: string;
-  user_id: string;
-  image_path: string;
-  receipt_date: string | null;
-  amount: number | null;
-  vendor: string | null;
-  category: string | null;
-  notes: string | null;
-  is_reconciled: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-interface ReceiptFiltersType {
-  startDate?: string;
-  endDate?: string;
-  category?: string;
-}
+import type { Receipt, ReceiptFilters as ReceiptFiltersType } from "@/lib/types";
 
 const Receipts = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -44,7 +26,7 @@ const Receipts = () => {
       if (session?.user) {
         setUser(session.user);
         // Fetch user role
-        const { data: roleData } = await supabase
+        const { data: roleData } = await db
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
@@ -60,39 +42,39 @@ const Receipts = () => {
     checkAuth();
   }, [navigate]);
 
-  useEffect(() => {
+  const fetchReceipts = useCallback(async () => {
     if (!user) return;
 
-    const fetchReceipts = async () => {
-      let query = supabase
-        .from("receipts")
-        .select("*")
-        .order("receipt_date", { ascending: false });
+    let query = db
+      .from("receipts")
+      .select("*")
+      .order("receipt_date", { ascending: false });
 
-      if (filters.startDate) {
-        query = query.gte("receipt_date", filters.startDate);
-      }
-      if (filters.endDate) {
-        query = query.lte("receipt_date", filters.endDate);
-      }
-      if (filters.category) {
-        query = query.eq("category", filters.category);
-      }
+    if (filters.startDate) {
+      query = query.gte("receipt_date", filters.startDate);
+    }
+    if (filters.endDate) {
+      query = query.lte("receipt_date", filters.endDate);
+    }
+    if (filters.category) {
+      query = query.eq("category", filters.category);
+    }
 
-      const { data, error } = await query;
-      if (error) {
-        toast({
-          variant: "destructive",
-          title: "Error loading receipts",
-          description: error.message,
-        });
-      } else {
-        setReceipts((data || []) as Receipt[]);
-      }
-    };
-
-    fetchReceipts();
+    const { data, error } = await query;
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error loading receipts",
+        description: error.message,
+      });
+    } else {
+      setReceipts((data || []) as Receipt[]);
+    }
   }, [user, filters, toast]);
+
+  useEffect(() => {
+    fetchReceipts();
+  }, [fetchReceipts]);
 
   const handleExportCSV = () => {
     if (receipts.length === 0) {
@@ -186,6 +168,7 @@ const Receipts = () => {
                 key={receipt.id}
                 receipt={receipt}
                 showReconcileToggle={!isOwner}
+                onReconcileChange={fetchReceipts}
               />
             ))}
           </div>
