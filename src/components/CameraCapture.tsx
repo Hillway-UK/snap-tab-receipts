@@ -112,55 +112,66 @@ export const CameraCapture = ({ onCapture, disabled }: CameraCaptureProps) => {
     }
   };
 
-  // Camera preview mode
+  // Camera preview mode - FULLSCREEN OVERLAY
   if (isCameraOpen) {
     return (
-      <div className="flex flex-col items-center gap-4 p-4">
-        <div className="relative w-full max-w-md overflow-hidden rounded-lg bg-black">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full"
-            onLoadedMetadata={() => {
-              videoRef.current?.play();
-            }}
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={stopCamera}
-            className="absolute right-2 top-2 bg-black/50 text-white hover:bg-black/70"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
+      <div className="fixed inset-0 z-50 flex flex-col bg-black">
+        {/* Video fills the screen */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="h-full w-full flex-1 object-cover"
+          onLoadedMetadata={() => {
+            videoRef.current?.play();
+          }}
+        />
 
+        {/* Close button - top right */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={stopCamera}
+          className="absolute right-4 top-4 z-10 bg-black/50 text-white hover:bg-black/70"
+        >
+          <X className="h-6 w-6" />
+        </Button>
+
+        {/* Hidden canvas for capture */}
         <canvas ref={canvasRef} className="hidden" />
 
-        <div className="flex gap-4">
-          <Button
-            size="lg"
-            onClick={capturePhoto}
-            disabled={disabled}
-            className="h-16 w-16 rounded-full shadow-lg"
-          >
-            <Camera className="h-8 w-8" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => {
-              stopCamera();
-              startCamera();
-            }}
-            className="h-12 w-12 rounded-full"
-          >
-            <RefreshCw className="h-5 w-5" />
-          </Button>
+        {/* Bottom controls bar */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pb-8 pt-4">
+          <div className="flex items-center justify-center gap-8">
+            {/* Refresh/switch camera button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                stopCamera();
+                startCamera();
+              }}
+              className="h-12 w-12 rounded-full bg-white/20 text-white hover:bg-white/30"
+            >
+              <RefreshCw className="h-5 w-5" />
+            </Button>
+
+            {/* Main capture button - large white circle */}
+            <Button
+              size="lg"
+              onClick={capturePhoto}
+              disabled={disabled}
+              className="h-20 w-20 rounded-full bg-white text-black shadow-lg hover:bg-gray-200"
+            >
+              <Camera className="h-10 w-10" />
+            </Button>
+
+            {/* Placeholder for symmetry */}
+            <div className="w-12" />
+          </div>
+          <p className="mt-3 text-center text-sm text-white/80">Tap to capture</p>
         </div>
-        <p className="text-sm text-muted-foreground">Tap the camera button to capture</p>
       </div>
     );
   }
