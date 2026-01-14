@@ -6,8 +6,9 @@ import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User, Download, Cloud } from "lucide-react";
+import { LogOut, User, Download, Cloud, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { Link } from "react-router-dom";
 
@@ -17,6 +18,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isConnected, isLoading: driveLoading, user: driveUser, connect, disconnect } = useGoogleDrive();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -50,6 +52,22 @@ const Settings = () => {
     } else {
       navigate("/");
     }
+  };
+
+  const handleConnectDrive = () => {
+    connect();
+    toast({
+      title: "Connecting to Google Drive",
+      description: "Please sign in with your Google account",
+    });
+  };
+
+  const handleDisconnectDrive = () => {
+    disconnect();
+    toast({
+      title: "Disconnected",
+      description: "Google Drive has been disconnected",
+    });
   };
 
   if (loading) {
@@ -144,6 +162,67 @@ const Settings = () => {
           </CardContent>
         </Card>
 
+        {/* Google Drive Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Cloud className="h-5 w-5" />
+              Google Drive Backup
+            </CardTitle>
+            <CardDescription>
+              {isConnected
+                ? "Connected - You can save receipts to your Drive"
+                : "Connect to backup receipts to your Google Drive"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {isConnected && driveUser ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
+                  {driveUser.picture && (
+                    <img
+                      src={driveUser.picture}
+                      alt={driveUser.name}
+                      className="h-10 w-10 rounded-full"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{driveUser.name}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {driveUser.email}
+                    </p>
+                  </div>
+                  <Check className="h-5 w-5 text-primary flex-shrink-0" />
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleDisconnectDrive}
+                >
+                  Disconnect Google Drive
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={handleConnectDrive}
+                disabled={driveLoading}
+              >
+                {driveLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Cloud className="h-4 w-4" />
+                )}
+                Connect Google Drive
+              </Button>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Receipts are saved to a "SnapTab Receipts" folder in your Drive
+            </p>
+          </CardContent>
+        </Card>
+
         {/* App Section */}
         <Card className="mb-6">
           <CardHeader>
@@ -151,19 +230,15 @@ const Settings = () => {
               <Download className="h-5 w-5" />
               App
             </CardTitle>
-            <CardDescription>Install and backup options</CardDescription>
+            <CardDescription>Install SnapTab on your device</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent>
             <Link to="/install">
               <Button variant="outline" className="w-full justify-start gap-2">
                 <Download className="h-4 w-4" />
                 Install SnapTab on your device
               </Button>
             </Link>
-            <Button variant="outline" className="w-full justify-start gap-2" disabled>
-              <Cloud className="h-4 w-4" />
-              Connect Google Drive (Coming Soon)
-            </Button>
           </CardContent>
         </Card>
 
