@@ -33,7 +33,9 @@ export async function getOrCreateFolder(
   );
 
   if (!searchResponse.ok) {
-    throw new Error("Failed to search for folder");
+    const errorData = await searchResponse.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `HTTP ${searchResponse.status}`;
+    throw new Error(`Failed to search for folder: ${errorMessage} (${searchResponse.status})`);
   }
 
   const searchData = await searchResponse.json();
@@ -56,7 +58,9 @@ export async function getOrCreateFolder(
   });
 
   if (!createResponse.ok) {
-    throw new Error("Failed to create folder");
+    const errorData = await createResponse.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `HTTP ${createResponse.status}`;
+    throw new Error(`Failed to create folder: ${errorMessage} (${createResponse.status})`);
   }
 
   const folderData = await createResponse.json();
@@ -117,8 +121,9 @@ export async function uploadToDrive(
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to upload file: ${error}`);
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+    throw new Error(`Failed to upload file: ${errorMessage} (${response.status})`);
   }
 
   return response.json();
