@@ -28,6 +28,13 @@ export const CameraCapture = ({ onCapture, disabled }: CameraCaptureProps) => {
     };
   }, [stream]);
 
+  // Attach stream to video element after render
+  useEffect(() => {
+    if (stream && videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+  }, [stream, isCameraOpen]);
+
   const startCamera = useCallback(async () => {
     setCameraError(null);
     try {
@@ -37,11 +44,7 @@ export const CameraCapture = ({ onCapture, disabled }: CameraCaptureProps) => {
       });
       setStream(mediaStream);
       setIsCameraOpen(true);
-
-      // Attach stream to video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
+      // Stream will be attached by useEffect after render
     } catch (err) {
       console.error("Camera access error:", err);
       if (err instanceof Error) {
