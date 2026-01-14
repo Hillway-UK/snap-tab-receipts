@@ -49,7 +49,9 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Avoid caching JS/HTML so env-driven builds update immediately after deploy.
+        // Cache only static assets.
+        globPatterns: ["**/*.{css,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
