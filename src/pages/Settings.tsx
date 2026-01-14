@@ -18,7 +18,7 @@ const Settings = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isConnected, isLoading: driveLoading, user: driveUser, connect, disconnect } = useGoogleDrive();
+  const { isConnected, isLoading: driveLoading, isConfigured, user: driveUser, connect, disconnect } = useGoogleDrive();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -207,14 +207,14 @@ const Settings = () => {
                 variant="outline"
                 className="w-full justify-start gap-2"
                 onClick={handleConnectDrive}
-                disabled={driveLoading}
+                disabled={driveLoading || !isConfigured}
               >
                 {driveLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Cloud className="h-4 w-4" />
                 )}
-                Connect Google Drive
+                {isConfigured ? "Connect Google Drive" : "Google Drive (Coming Soon)"}
               </Button>
             )}
             <p className="text-xs text-muted-foreground">
