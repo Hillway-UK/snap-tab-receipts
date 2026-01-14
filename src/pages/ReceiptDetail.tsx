@@ -5,6 +5,7 @@ import { db } from "@/lib/supabase-db";
 import { BottomNav } from "@/components/BottomNav";
 import { ReceiptForm } from "@/components/ReceiptForm";
 import { ShareButton } from "@/components/ShareButton";
+import { GoogleDriveButton } from "@/components/GoogleDriveButton";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
@@ -240,12 +241,18 @@ const ReceiptDetail = () => {
           </CardContent>
         </Card>
 
-        {/* Share Button */}
-        <div className="mb-6">
+        {/* Share & Drive Buttons */}
+        <div className="mb-6 flex gap-2">
           <ShareButton
             imageUrl={getImageUrl(receipt.image_path)}
             fileName={`receipt-${receipt.receipt_date || receipt.id}.jpg`}
             variant="default"
+            size="lg"
+          />
+          <GoogleDriveButton
+            imageUrl={getImageUrl(receipt.image_path)}
+            fileName={`receipt-${receipt.vendor || receipt.id}-${receipt.receipt_date || "unknown"}.jpg`}
+            variant="outline"
             size="lg"
           />
         </div>
