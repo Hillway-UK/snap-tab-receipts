@@ -97,14 +97,25 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
 
       setIsLoading(true);
       try {
+        // Validate token first
+        const tokenCheck = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        
+        if (!tokenCheck.ok) {
+          disconnect();
+          throw new Error("Session expired. Please reconnect to Google Drive.");
+        }
+
         const folderId = await getOrCreateFolder(accessToken);
         const blob = await fetchImageAsBlob(imageUrl);
         const file = await uploadToDrive(accessToken, blob, fileName, folderId);
         return file.webViewLink || file.id;
       } catch (error: any) {
         console.error("Failed to upload to Google Drive:", error);
-        if (error.message?.includes("401") || error.message?.includes("Invalid Credentials")) {
+        if (error.message?.includes("401") || error.message?.includes("Invalid Credentials") || error.message?.includes("unauthorized")) {
           disconnect();
+          throw new Error("Session expired. Please reconnect to Google Drive.");
         }
         throw error;
       } finally {
