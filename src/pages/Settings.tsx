@@ -162,16 +162,16 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Google Drive Section */}
-        <Card className="mb-6">
+        {/* Google Drive Backup Section */}
+        <Card className="mb-6 border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Cloud className="h-5 w-5" />
+              <Cloud className="h-5 w-5 text-primary" />
               Google Drive Backup
             </CardTitle>
             <CardDescription>
               {isConnected
-                ? "Connected - You can save receipts to your Drive"
+                ? "Connected – You can save receipts to your Drive"
                 : "Connect to backup receipts to your Google Drive"}
             </CardDescription>
           </CardHeader>
