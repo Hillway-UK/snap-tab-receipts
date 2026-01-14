@@ -19,9 +19,6 @@ const Settings = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Debug helper: Vite env vars are injected at build time; we only show presence, not the value.
-  const googleClientIdLength = (import.meta.env.VITE_GOOGLE_CLIENT_ID || "").length;
-
   const { isConnected, isLoading: driveLoading, isConfigured, user: driveUser, connect, disconnect } = useGoogleDrive();
 
   useEffect(() => {
@@ -223,9 +220,6 @@ const Settings = () => {
             )}
             <p className="text-xs text-muted-foreground">
               Receipts are saved to a "SnapTab Receipts" folder in your Drive
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Google Drive setup: {isConfigured ? "enabled" : "disabled"} (client id length: {googleClientIdLength || 0})
             </p>
           </CardContent>
         </Card>
