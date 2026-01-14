@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Receipts from "./pages/Receipts";
 import ReceiptDetail from "./pages/ReceiptDetail";
 import Settings from "./pages/Settings";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/receipts" element={<Receipts />} />
           <Route path="/receipts/:id" element={<ReceiptDetail />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/install" element={<Install />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

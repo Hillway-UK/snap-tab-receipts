@@ -6,9 +6,10 @@ import { BottomNav } from "@/components/BottomNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Download, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { Link } from "react-router-dom";
 
 const Settings = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -140,6 +141,29 @@ const Settings = () => {
                 No role assigned. Contact the owner to get access.
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        {/* App Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5" />
+              App
+            </CardTitle>
+            <CardDescription>Install and backup options</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link to="/install">
+              <Button variant="outline" className="w-full justify-start gap-2">
+                <Download className="h-4 w-4" />
+                Install SnapTab on your device
+              </Button>
+            </Link>
+            <Button variant="outline" className="w-full justify-start gap-2" disabled>
+              <Cloud className="h-4 w-4" />
+              Connect Google Drive (Coming Soon)
+            </Button>
           </CardContent>
         </Card>
 
