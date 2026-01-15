@@ -2,22 +2,23 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Cloud, Check, Loader2 } from "lucide-react";
 
 interface GoogleDriveButtonProps {
-  imageUrl: string;
+  storagePath: string;
   fileName: string;
   variant?: "default" | "outline" | "secondary" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
 }
 
 export function GoogleDriveButton({
-  imageUrl,
+  storagePath,
   fileName,
   variant = "outline",
   size = "default",
 }: GoogleDriveButtonProps) {
-  const { isConnected, isLoading, uploadReceipt, connect } = useGoogleDrive();
+  const { isConnected, isLoading, uploadReceiptBlob, connect } = useGoogleDrive();
   const { toast } = useToast();
   const [uploaded, setUploaded] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,7 +31,19 @@ export function GoogleDriveButton({
 
     setUploading(true);
     try {
-      const link = await uploadReceipt(imageUrl, fileName);
+      // Download from Supabase Storage (authenticated) then upload to Drive
+      console.log("Downloading from Storage:", storagePath);
+      const { data: blob, error: downloadError } = await supabase.storage
+        .from("receipts")
+        .download(storagePath);
+
+      if (downloadError || !blob) {
+        throw new Error(downloadError?.message || "Failed to download image from storage");
+      }
+
+      console.log("Uploading to Drive:", fileName);
+      const link = await uploadReceiptBlob(blob, fileName);
+      
       if (link) {
         setUploaded(true);
         toast({
@@ -41,6 +54,7 @@ export function GoogleDriveButton({
         setTimeout(() => setUploaded(false), 3000);
       }
     } catch (error: any) {
+      console.error("Drive upload failed:", error);
       toast({
         variant: "destructive",
         title: "Upload failed",

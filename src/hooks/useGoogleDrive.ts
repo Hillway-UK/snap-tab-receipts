@@ -29,6 +29,7 @@ interface UseGoogleDriveReturn {
   connect: () => void;
   disconnect: () => void;
   uploadReceipt: (imageUrl: string, fileName: string) => Promise<string | null>;
+  uploadReceiptBlob: (blob: Blob, fileName: string) => Promise<string | null>;
   openFolder: () => Promise<void>;
   shareFolder: (email: string, role: "reader" | "writer") => Promise<void>;
   deleteReceipt: (vendor: string | null, receiptDate: string | null) => Promise<void>;
@@ -121,19 +122,61 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
     return id;
   }, [accessToken, folderId]);
 
+  const validateToken = useCallback(async (): Promise<boolean> => {
+    if (!accessToken) return false;
+    const tokenCheck = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!tokenCheck.ok) {
+      disconnect();
+      return false;
+    }
+    return true;
+  }, [accessToken, disconnect]);
+
+  // Upload using a Blob/File directly (preferred - no URL fetching needed)
+  const uploadReceiptBlob = useCallback(
+    async (blob: Blob, fileName: string): Promise<string | null> => {
+      if (!accessToken) {
+        console.log("Drive upload skipped: not connected");
+        return null;
+      }
+
+      setIsLoading(true);
+      try {
+        const isValid = await validateToken();
+        if (!isValid) {
+          throw new Error("Session expired. Please reconnect to Google Drive.");
+        }
+
+        const currentFolderId = await ensureFolderId();
+        console.log("Uploading to Drive:", fileName);
+        const file = await uploadToDrive(accessToken, blob, fileName, currentFolderId);
+        console.log("Drive upload successful:", file.id);
+        return file.webViewLink || file.id;
+      } catch (error: any) {
+        console.error("Failed to upload to Google Drive:", error);
+        if (error.message?.includes("401") || error.message?.includes("Invalid Credentials") || error.message?.includes("unauthorized")) {
+          disconnect();
+          throw new Error("Session expired. Please reconnect to Google Drive.");
+        }
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [accessToken, disconnect, ensureFolderId, validateToken]
+  );
+
+  // Legacy method that fetches from URL first
   const uploadReceipt = useCallback(
     async (imageUrl: string, fileName: string): Promise<string | null> => {
       if (!accessToken) return null;
 
       setIsLoading(true);
       try {
-        // Validate token first
-        const tokenCheck = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        
-        if (!tokenCheck.ok) {
-          disconnect();
+        const isValid = await validateToken();
+        if (!isValid) {
           throw new Error("Session expired. Please reconnect to Google Drive.");
         }
 
@@ -152,7 +195,7 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
         setIsLoading(false);
       }
     },
-    [accessToken, disconnect, ensureFolderId]
+    [accessToken, disconnect, ensureFolderId, validateToken]
   );
 
   const openFolder = useCallback(async () => {
@@ -218,6 +261,7 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
     connect,
     disconnect,
     uploadReceipt,
+    uploadReceiptBlob,
     openFolder,
     shareFolder,
     deleteReceipt,
@@ -236,6 +280,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
       connect: () => console.warn("Google Drive not configured - missing VITE_GOOGLE_CLIENT_ID"),
       disconnect: () => {},
       uploadReceipt: async () => null,
+      uploadReceiptBlob: async () => null,
       openFolder: async () => {},
       shareFolder: async () => {},
       deleteReceipt: async () => {},
