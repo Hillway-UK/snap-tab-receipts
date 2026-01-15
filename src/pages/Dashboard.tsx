@@ -123,7 +123,7 @@ const Dashboard = () => {
           const { data: urlData } = supabase.storage
             .from("receipts")
             .getPublicUrl(uploadedPath);
-          const fileName = `receipt_${data.vendor || "unknown"}_${data.receipt_date}.${uploadedPath.split('.').pop()}`;
+          const fileName = `receipt-${data.vendor || "unknown"}-${data.receipt_date}.${uploadedPath.split('.').pop()}`;
           await uploadToDrive(urlData.publicUrl, fileName);
           toast({ title: "Also backed up to Google Drive" });
         } catch (driveError: any) {
