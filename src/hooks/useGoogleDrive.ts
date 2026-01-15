@@ -188,8 +188,8 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
       if (!accessToken || !folderId) return;
 
       try {
-        // Search for the file using the naming pattern used during upload
-        const searchTerm = `receipt_${vendor || "unknown"}_${receiptDate || ""}`;
+        // Search for the file using the naming pattern used during upload: receipt-{vendor}-{date}.jpg
+        const searchTerm = `receipt-${vendor || "unknown"}-${receiptDate || ""}`;
         const fileId = await searchFileByName(accessToken, searchTerm, folderId);
         
         if (fileId) {
