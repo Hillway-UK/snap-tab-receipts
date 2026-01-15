@@ -6,8 +6,26 @@ import { BottomNav } from "@/components/BottomNav";
 import { ReceiptCard } from "@/components/ReceiptCard";
 import { ReceiptFilters } from "@/components/ReceiptFilters";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, Plus } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FileSpreadsheet, Plus, ExternalLink, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import type { User } from "@supabase/supabase-js";
 import type { Receipt, ReceiptFilters as ReceiptFiltersType } from "@/lib/types";
 
@@ -17,8 +35,13 @@ const Receipts = () => {
   const [loading, setLoading] = useState(true);
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [filters, setFilters] = useState<ReceiptFiltersType>({});
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [shareEmail, setShareEmail] = useState("");
+  const [shareRole, setShareRole] = useState<"reader" | "writer">("reader");
+  const [isSharing, setIsSharing] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isConnected: isDriveConnected, openFolder, shareFolder, isLoading: isDriveLoading } = useGoogleDrive();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -109,6 +132,49 @@ const Receipts = () => {
     toast({ title: "CSV exported" });
   };
 
+  const handleOpenDriveFolder = async () => {
+    try {
+      await openFolder();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to open folder",
+        description: error.message,
+      });
+    }
+  };
+
+  const handleShareFolder = async () => {
+    if (!shareEmail.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Email required",
+        description: "Please enter an email address to share with.",
+      });
+      return;
+    }
+
+    setIsSharing(true);
+    try {
+      await shareFolder(shareEmail.trim(), shareRole);
+      toast({
+        title: "Folder shared",
+        description: `Shared with ${shareEmail} as ${shareRole === "reader" ? "Viewer" : "Editor"}.`,
+      });
+      setShowShareDialog(false);
+      setShareEmail("");
+      setShareRole("reader");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Failed to share folder",
+        description: error.message,
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
   const isOwner = userRole === "owner";
 
   if (loading) {
@@ -145,6 +211,29 @@ const Receipts = () => {
             <FileSpreadsheet className="h-4 w-4" />
             Export CSV
           </Button>
+          {isDriveConnected && (
+            <>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOpenDriveFolder} 
+                disabled={isDriveLoading}
+                className="gap-1"
+              >
+                <ExternalLink className="h-4 w-4" />
+                View GDrive
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowShareDialog(true)} 
+                className="gap-1"
+              >
+                <Share2 className="h-4 w-4" />
+                Share
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Receipt Grid */}
@@ -174,6 +263,50 @@ const Receipts = () => {
           </div>
         )}
       </div>
+
+      {/* Share Folder Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Receipts Folder</DialogTitle>
+            <DialogDescription>
+              Share your SnapTab Receipts folder in Google Drive with another person.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="share-email">Email address</Label>
+              <Input
+                id="share-email"
+                type="email"
+                placeholder="colleague@example.com"
+                value={shareEmail}
+                onChange={(e) => setShareEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="share-role">Permission level</Label>
+              <Select value={shareRole} onValueChange={(v) => setShareRole(v as "reader" | "writer")}>
+                <SelectTrigger id="share-role">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="reader">Viewer (can view only)</SelectItem>
+                  <SelectItem value="writer">Editor (can view and edit)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowShareDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleShareFolder} disabled={isSharing}>
+              {isSharing ? "Sharing..." : "Share"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <BottomNav />
     </div>

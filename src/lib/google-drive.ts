@@ -139,3 +139,60 @@ export async function fetchImageAsBlob(imageUrl: string): Promise<Blob> {
   }
   return response.blob();
 }
+
+/**
+ * Get the web link for a folder
+ */
+export async function getFolderLink(
+  accessToken: string,
+  folderId: string
+): Promise<string> {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_API}/files/${folderId}?fields=webViewLink`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    // Fallback to direct link if API fails
+    return `https://drive.google.com/drive/folders/${folderId}`;
+  }
+
+  const data = await response.json();
+  return data.webViewLink || `https://drive.google.com/drive/folders/${folderId}`;
+}
+
+/**
+ * Share a folder with another user via email
+ */
+export async function shareFolderWithEmail(
+  accessToken: string,
+  folderId: string,
+  email: string,
+  role: "reader" | "writer" = "reader"
+): Promise<void> {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_API}/files/${folderId}/permissions`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        type: "user",
+        role: role,
+        emailAddress: email,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+    throw new Error(`Failed to share folder: ${errorMessage}`);
+  }
+}
