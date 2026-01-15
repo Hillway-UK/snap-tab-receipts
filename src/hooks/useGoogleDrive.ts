@@ -5,7 +5,9 @@ import {
   uploadToDrive, 
   fetchImageAsBlob, 
   getFolderLink,
-  shareFolderWithEmail 
+  shareFolderWithEmail,
+  searchFileByName,
+  deleteFile 
 } from "@/lib/google-drive";
 
 const STORAGE_KEY = "google_drive_token";
@@ -29,6 +31,7 @@ interface UseGoogleDriveReturn {
   uploadReceipt: (imageUrl: string, fileName: string) => Promise<string | null>;
   openFolder: () => Promise<void>;
   shareFolder: (email: string, role: "reader" | "writer") => Promise<void>;
+  deleteReceipt: (vendor: string | null, receiptDate: string | null) => Promise<void>;
 }
 
 // Separate hook that only runs when client ID is configured
@@ -180,6 +183,26 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
     [accessToken, ensureFolderId]
   );
 
+  const deleteReceipt = useCallback(
+    async (vendor: string | null, receiptDate: string | null) => {
+      if (!accessToken || !folderId) return;
+
+      try {
+        // Search for the file using the naming pattern used during upload
+        const searchTerm = `receipt_${vendor || "unknown"}_${receiptDate || ""}`;
+        const fileId = await searchFileByName(accessToken, searchTerm, folderId);
+        
+        if (fileId) {
+          await deleteFile(accessToken, fileId);
+        }
+      } catch (error) {
+        console.warn("Failed to delete from Google Drive:", error);
+        // Don't throw - this is non-blocking
+      }
+    },
+    [accessToken, folderId]
+  );
+
   return {
     isConnected: !!accessToken && !!user,
     isLoading,
@@ -190,6 +213,7 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
     uploadReceipt,
     openFolder,
     shareFolder,
+    deleteReceipt,
   };
 }
 
@@ -207,6 +231,7 @@ export function useGoogleDrive(): UseGoogleDriveReturn {
       uploadReceipt: async () => null,
       openFolder: async () => {},
       shareFolder: async () => {},
+      deleteReceipt: async () => {},
     };
   }
 

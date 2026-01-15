@@ -18,6 +18,7 @@ const Dashboard = () => {
   const [showForm, setShowForm] = useState(false);
   const [uploadedPath, setUploadedPath] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isConnected: isDriveConnected, uploadReceipt: uploadToDrive } = useGoogleDrive();
@@ -99,6 +100,7 @@ const Dashboard = () => {
   }) => {
     if (!uploadedPath || !user) return;
 
+    setIsSaving(true);
     try {
       const { error } = await db.from("receipts").insert({
         user_id: user.id,
@@ -141,6 +143,8 @@ const Dashboard = () => {
         title: "Error saving receipt",
         description: error.message,
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -211,7 +215,7 @@ const Dashboard = () => {
           <ReceiptForm
             onSave={handleSaveReceipt}
             onCancel={handleCloseForm}
-            isLoading={false}
+            isLoading={isSaving}
           />
         </DialogContent>
       </Dialog>

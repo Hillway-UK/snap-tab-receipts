@@ -196,3 +196,52 @@ export async function shareFolderWithEmail(
     throw new Error(`Failed to share folder: ${errorMessage}`);
   }
 }
+
+/**
+ * Search for a file by name in a folder
+ */
+export async function searchFileByName(
+  accessToken: string,
+  fileName: string,
+  folderId: string
+): Promise<string | null> {
+  const searchParams = new URLSearchParams({
+    q: `name contains '${fileName}' and '${folderId}' in parents and trashed=false`,
+    fields: "files(id, name)",
+  });
+
+  const response = await fetch(
+    `${GOOGLE_DRIVE_API}/files?${searchParams}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok) return null;
+  const data = await response.json();
+  return data.files?.[0]?.id || null;
+}
+
+/**
+ * Delete a file from Google Drive
+ */
+export async function deleteFile(
+  accessToken: string,
+  fileId: string
+): Promise<void> {
+  const response = await fetch(
+    `${GOOGLE_DRIVE_API}/files/${fileId}`,
+    {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+
+  if (!response.ok && response.status !== 404) {
+    throw new Error("Failed to delete file from Google Drive");
+  }
+}
