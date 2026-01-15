@@ -8,6 +8,7 @@ import { ReceiptForm } from "@/components/ReceiptForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import type { User } from "@supabase/supabase-js";
 
 const Dashboard = () => {
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isConnected: isDriveConnected, uploadReceipt: uploadToDrive } = useGoogleDrive();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -112,6 +114,25 @@ const Dashboard = () => {
       if (error) throw error;
 
       toast({ title: "Receipt saved successfully" });
+
+      // Auto-save to Google Drive if connected
+      if (isDriveConnected && capturedImage) {
+        try {
+          const { data: urlData } = supabase.storage
+            .from("receipts")
+            .getPublicUrl(uploadedPath);
+          const fileName = `receipt_${data.vendor || "unknown"}_${data.receipt_date}.${uploadedPath.split('.').pop()}`;
+          await uploadToDrive(urlData.publicUrl, fileName);
+          toast({ title: "Also backed up to Google Drive" });
+        } catch (driveError: any) {
+          toast({
+            variant: "default",
+            title: "Google Drive backup skipped",
+            description: driveError.message,
+          });
+        }
+      }
+
       handleCloseForm();
       navigate("/receipts");
     } catch (error: any) {
