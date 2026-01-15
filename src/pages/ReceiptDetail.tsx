@@ -261,7 +261,7 @@ const ReceiptDetail = () => {
             size="lg"
           />
           <GoogleDriveButton
-            imageUrl={getImageUrl(receipt.image_path)}
+            storagePath={receipt.image_path}
             fileName={`receipt-${receipt.vendor || receipt.id}-${receipt.receipt_date || "unknown"}.jpg`}
             variant="outline"
             size="lg"
