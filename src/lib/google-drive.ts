@@ -205,10 +205,15 @@ export async function searchFileByName(
   fileName: string,
   folderId: string
 ): Promise<string | null> {
+  // Escape single quotes in filename for the API query
+  const escapedFileName = fileName.replace(/'/g, "\\'");
+  
   const searchParams = new URLSearchParams({
-    q: `name contains '${fileName}' and '${folderId}' in parents and trashed=false`,
+    q: `name contains '${escapedFileName}' and '${folderId}' in parents and trashed=false`,
     fields: "files(id, name)",
   });
+
+  console.log("Drive search query:", searchParams.get("q"));
 
   const response = await fetch(
     `${GOOGLE_DRIVE_API}/files?${searchParams}`,
@@ -219,8 +224,13 @@ export async function searchFileByName(
     }
   );
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    console.warn("Drive search failed:", response.status);
+    return null;
+  }
+  
   const data = await response.json();
+  console.log("Drive search results:", data.files);
   return data.files?.[0]?.id || null;
 }
 

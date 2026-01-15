@@ -185,19 +185,26 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
 
   const deleteReceipt = useCallback(
     async (vendor: string | null, receiptDate: string | null) => {
-      if (!accessToken || !folderId) return;
+      if (!accessToken || !folderId) {
+        console.log("Cannot delete from Drive: not connected or no folder ID");
+        return;
+      }
 
       try {
-        // Search for the file using the naming pattern used during upload: receipt-{vendor}-{date}.jpg
         const searchTerm = `receipt-${vendor || "unknown"}-${receiptDate || ""}`;
+        console.log("Searching Drive for:", searchTerm);
+        
         const fileId = await searchFileByName(accessToken, searchTerm, folderId);
         
         if (fileId) {
+          console.log("Found file, deleting:", fileId);
           await deleteFile(accessToken, fileId);
+          console.log("Successfully deleted from Drive");
+        } else {
+          console.log("File not found in Drive");
         }
       } catch (error) {
         console.warn("Failed to delete from Google Drive:", error);
-        // Don't throw - this is non-blocking
       }
     },
     [accessToken, folderId]
