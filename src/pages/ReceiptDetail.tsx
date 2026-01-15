@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useGoogleDrive } from "@/hooks/useGoogleDrive";
 import type { User } from "@supabase/supabase-js";
 import type { Receipt } from "@/lib/types";
 
@@ -35,6 +36,7 @@ const ReceiptDetail = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isConnected: isDriveConnected, deleteReceipt: deleteFromDrive } = useGoogleDrive();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -135,6 +137,15 @@ const ReceiptDetail = () => {
       // Delete receipt record
       const { error } = await db.from("receipts").delete().eq("id", id);
       if (error) throw error;
+
+      // Try to delete from Google Drive (non-blocking)
+      if (isDriveConnected) {
+        try {
+          await deleteFromDrive(receipt.vendor, receipt.receipt_date);
+        } catch (driveError) {
+          console.warn("Failed to delete from Google Drive:", driveError);
+        }
+      }
 
       toast({ title: "Receipt deleted" });
       navigate("/receipts");
