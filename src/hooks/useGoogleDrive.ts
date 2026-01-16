@@ -138,8 +138,7 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
   const uploadReceiptBlob = useCallback(
     async (blob: Blob, fileName: string): Promise<string | null> => {
       if (!accessToken) {
-        console.log("Drive upload skipped: not connected");
-        return null;
+        throw new Error("Not connected to Google Drive");
       }
 
       setIsLoading(true);
@@ -171,7 +170,9 @@ function useGoogleDriveInternal(): UseGoogleDriveReturn {
   // Legacy method that fetches from URL first
   const uploadReceipt = useCallback(
     async (imageUrl: string, fileName: string): Promise<string | null> => {
-      if (!accessToken) return null;
+      if (!accessToken) {
+        throw new Error("Not connected to Google Drive");
+      }
 
       setIsLoading(true);
       try {
