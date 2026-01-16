@@ -21,7 +21,7 @@ const Dashboard = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isConnected: isDriveConnected, uploadReceiptBlob } = useGoogleDrive();
+  const { uploadReceiptBlob } = useGoogleDrive();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -117,10 +117,10 @@ const Dashboard = () => {
 
       toast({ title: "Receipt saved successfully" });
 
-      // Auto-save to Google Drive if connected (use local file, not public URL)
-      if (isDriveConnected && capturedImage?.file) {
+      // Auto-save to Google Drive (uses local file, not public URL)
+      if (capturedImage?.file) {
         try {
-          const fileName = `receipt-${data.vendor || "unknown"}-${data.receipt_date}.${uploadedPath.split('.').pop()}`;
+          const fileName = `receipt-${data.vendor || "unknown"}-${data.receipt_date}.${uploadedPath.split(".").pop()}`;
           console.log("Auto-backing up to Drive:", fileName);
           await uploadReceiptBlob(capturedImage.file, fileName);
           toast({ title: "Also backed up to Google Drive" });
@@ -129,7 +129,8 @@ const Dashboard = () => {
           toast({
             variant: "default",
             title: "Google Drive backup skipped",
-            description: driveError.message,
+            description:
+              driveError?.message || "Connect Google Drive to enable automatic backups.",
           });
         }
       }
